@@ -156,6 +156,11 @@ INSERT INTO OrderItems (OrderId, ProductId, Quantity, UnitPrice) VALUES
 (8, 4, 1, 7500);
 GO
 
+-- addition of common questions
+-- 3rd highest salary
+select EmployeeName , Salary from Employees order by Salary desc offset 2 row fetch next 1 row only
+
+
 -- /* ============================================================
 --    SECTION 1 — BASIC SELECT, FILTERING, SORTING, DISTINCT
 --    ============================================================ */
@@ -372,6 +377,9 @@ FROM Employees e
 INNER JOIN Departments d ON d.DepartmentId = e.DepartmentId;
 
 -- Q25 PRACTICE: Show each order ID with the name of the customer who placed it.
+select o.orderId , c.customerName 
+from Orders o 
+join Customers c on o.CustomerId=c.CustomerId
 
 -- Q26 SOLVED: List all departments, even those with no employees.
 SELECT d.DepartmentName, e.EmployeeName
@@ -380,6 +388,10 @@ LEFT JOIN Employees e ON e.DepartmentId = d.DepartmentId
 ORDER BY d.DepartmentName, e.EmployeeName;
 
 -- Q26 PRACTICE: List all customers and any orders they have placed, including customers with no orders.
+select c.CustomerName , o.orderId 
+from Customers c 
+left join orders o on c.CustomerId=o.CustomerId 
+order by c.CustomerName
 
 -- Q27 SOLVED: Find departments with no employees.
 SELECT d.DepartmentName
@@ -388,6 +400,11 @@ LEFT JOIN Employees e ON e.DepartmentId = d.DepartmentId
 WHERE e.EmployeeId IS NULL;
 
 -- Q27 PRACTICE: Find customers who have never placed an order.
+select c.CustomerName , o.orderId 
+from Customers c 
+left join orders o on c.CustomerId=o.CustomerId
+where o.OrderId is NULL
+order by c.CustomerName
 
 -- Q28 SOLVED: Show employee-manager pairs (self join).
 SELECT e.EmployeeName AS Employee, m.EmployeeName AS Manager
@@ -395,6 +412,11 @@ FROM Employees e
 LEFT JOIN Employees m ON m.EmployeeId = e.ManagerId;
 
 -- Q28 PRACTICE: Show each employee with their manager, but return only employees who have a manager.
+select e.EmployeeName as Employee, m.EmployeeName as Manager
+from Employees e 
+left join Employees m on m.EmployeeId=e.ManagerId
+where e.ManagerId is not null 
+order by e.EmployeeName
 
 -- Q29 SOLVED: Show order IDs, customer names, product names and quantities.
 SELECT o.OrderId, c.CustomerName, p.ProductName, oi.Quantity
@@ -405,6 +427,10 @@ JOIN Products p ON p.ProductId = oi.ProductId
 ORDER BY o.OrderId;
 
 -- Q29 PRACTICE: Show order ID, order date, customer name and order status.
+SELECT o.OrderId, o.OrderDate, c.CustomerName, o.Status
+FROM Orders o
+JOIN Customers c ON c.CustomerId = o.CustomerId
+ORDER BY o.OrderId;
 
 -- Q30 SOLVED: Find customers with at least one delivered order.
 SELECT DISTINCT c.CustomerId, c.CustomerName
@@ -413,6 +439,9 @@ JOIN Orders o ON o.CustomerId = c.CustomerId
 WHERE o.Status = 'Delivered';
 
 -- Q30 PRACTICE: Find customers with at least one cancelled order.
+select c.customerName, o.[Status] 
+from Customers c join Orders o on c.CustomerId = o.CustomerId 
+where o.Status='Cancelled'
 
 -- Q31 SOLVED: Calculate total value per order.
 SELECT o.OrderId, SUM(oi.Quantity * oi.UnitPrice) AS OrderTotal
@@ -422,6 +451,11 @@ GROUP BY o.OrderId
 ORDER BY o.OrderId;
 
 -- Q31 PRACTICE: Calculate total quantity of items per order.
+SELECT o.OrderId, SUM(oi.Quantity) AS TotalQuantity
+FROM Orders o
+JOIN OrderItems oi ON oi.OrderId = o.OrderId
+GROUP BY o.OrderId
+ORDER BY o.OrderId;
 
 /* ============================================================
    SECTION 5 — SUBQUERIES, IN, EXISTS
@@ -433,6 +467,7 @@ FROM Employees
 WHERE Salary > (SELECT AVG(Salary) FROM Employees);
 
 -- Q32 PRACTICE: Products priced above the overall average product price.
+select productName , Price from Products where Price>(select avg(price) from Products)
 
 -- Q33 SOLVED: Find employees who work in departments located in Chennai.
 SELECT EmployeeName
@@ -444,7 +479,12 @@ WHERE DepartmentId IN (
 );
 
 -- Q33 PRACTICE: Find employees who work in departments located in Bengaluru.
+select e.EmployeeName , d.location from Departments d join Employees e on e.DepartmentId=d.DepartmentId where d.[Location]='Bengaluru'
 
+select EmployeeName from Employees
+where DepartmentId in(
+    select DepartmentId from Departments where [Location] = 'Bengaluru'
+)
 -- Q34 SOLVED: Find customers who have at least one order using EXISTS.
 SELECT c.CustomerName
 FROM Customers c
@@ -461,7 +501,8 @@ SELECT EmployeeName, Salary
 FROM Employees
 WHERE Salary = (SELECT MAX(Salary) FROM Employees);
 
--- Q35 PRACTICE: Find the cheapest product(s).
+-- Q35 PRACTICE: Find the 3rd cheapest product(s).
+select productName , Price from Products order by Price asc offset 2 rows fetch next 1 rows only
 
 -- Q36 SOLVED: Find products that have never been ordered.
 SELECT p.ProductName
@@ -473,6 +514,7 @@ WHERE NOT EXISTS (
 );
 
 -- Q36 PRACTICE: Find customers who have never had a delivered order.
+select c.customerName , o.status from Orders o join Customers c on c.CustomerId = o.CustomerId where o.[Status] != 'Delivered'
 
 -- Q37 SOLVED: Find employees earning more than the average salary in their own department.
 SELECT e.EmployeeName, e.Salary, e.DepartmentId
@@ -485,7 +527,13 @@ WHERE e.DepartmentId IS NOT NULL
   );
 
 -- Q37 PRACTICE: Find products priced above the average price of their own category.
-
+SELECT p.ProductName, p.Category, p.Price
+FROM Products p
+WHERE p.Price > (
+    SELECT AVG(p2.Price)
+    FROM Products p2
+    WHERE p2.Category = p.Category
+);
 /* ============================================================
    SECTION 6 — CTEs AND WINDOW FUNCTIONS
    ============================================================ */
@@ -501,6 +549,10 @@ CROSS JOIN SalaryStats s
 WHERE e.Salary > s.AverageSalary;
 
 -- Q38 PRACTICE: Use a CTE to calculate average price and return products above it.
+with Calculation as(
+    select avg(price) as avgPrice from Products 
+)
+select p.productName , p.Price from Products p cross join Calculation c where p.Price>c.avgPrice
 
 -- Q39 SOLVED: Number employees within each department by salary.
 SELECT EmployeeName, DepartmentId, Salary,
@@ -511,6 +563,8 @@ SELECT EmployeeName, DepartmentId, Salary,
 FROM Employees;
 
 -- Q39 PRACTICE: Number products within each category from most expensive to cheapest.
+select productName, category , Price,
+Row_Number() Over(PARTITION BY Category order by Price desc) from Products
 
 -- Q40 SOLVED: Rank employees by salary, allowing ties and gaps.
 SELECT EmployeeName, Salary,
@@ -518,6 +572,8 @@ SELECT EmployeeName, Salary,
 FROM Employees;
 
 -- Q40 PRACTICE: Rank products by price using RANK().
+select productName , price,
+rank() over(order by Price desc) from Products
 
 -- Q41 SOLVED: Dense-rank employees by salary, with no gaps between ranks.
 SELECT EmployeeName, Salary,
@@ -525,6 +581,8 @@ SELECT EmployeeName, Salary,
 FROM Employees;
 
 -- Q41 PRACTICE: Use DENSE_RANK() to rank products by price.
+select productName , price,
+dense_rank() over(order by Price desc) as blah from Products;
 
 -- Q42 SOLVED: Return the second-highest distinct salary.
 WITH RankedSalaries AS (
@@ -537,6 +595,10 @@ FROM RankedSalaries
 WHERE SalaryRank = 2;
 
 -- Q42 PRACTICE: Return all employees earning the third-highest distinct salary.
+with Calculation as(
+    select EmployeeName , salary, Dense_RANK() over(order by salary desc) as SalaryRank from Employees
+)
+select employeeName, salary from Calculation where SalaryRank = 3;
 
 -- Q43 SOLVED: Return the highest-paid employee in each department.
 WITH RankedEmployees AS (
@@ -553,6 +615,26 @@ FROM RankedEmployees
 WHERE rn = 1;
 
 -- Q43 PRACTICE: Return the two highest-paid employees in each department.
+with Calculation as(
+    select EmployeeName , DepartmentId , Salary,
+    DENSE_RANK() OVER(PARTITION BY DepartmentId order by Salary desc) as SalaryRank from Employees where DepartmentId is not null
+) 
+select EmployeeName , DepartmentId , Salary from Calculation where SalaryRank<=2
+
+--with department name-
+WITH Calculation AS (
+    SELECT e.EmployeeName, e.DepartmentId, d.DepartmentName, e.Salary,
+           DENSE_RANK() OVER (
+               PARTITION BY e.DepartmentId
+               ORDER BY e.Salary DESC
+           ) AS SalaryRank
+    FROM Employees e
+    JOIN Departments d ON d.DepartmentId = e.DepartmentId
+    WHERE e.DepartmentId IS NOT NULL
+)
+SELECT EmployeeName, DepartmentId, DepartmentName, Salary
+FROM Calculation
+WHERE SalaryRank <= 2;
 
 -- Q44 SOLVED: Calculate a running total of order revenue by date.
 WITH DailyOrderTotals AS (
