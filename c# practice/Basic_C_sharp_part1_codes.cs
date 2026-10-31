@@ -58,6 +58,41 @@ using System.Text.RegularExpressions;
 			//2nd way reverse 
 			Console.WriteLine(reverseM("Joddd"));
 
+			//2D Array
+			int[,] matrix =
+			{
+				{1,3,4},
+				{5,3,1}
+			};
+			System.Console.WriteLine("----Matrix----");
+			System.Console.WriteLine(matrix[0,2]);
+			System.Console.WriteLine(matrix[1,1]);
+			for(int i = 0; i < matrix.GetLength(0); i++)
+		{
+			for (int j = 0; j < matrix.GetLength(1); j++)
+			{
+				System.Console.Write(matrix[i,j]+" ");
+			}
+			Console.WriteLine();
+
+		}
+		 //Stacks and Queue
+		System.Console.WriteLine("STACKS----------------------");
+		Stack<int> st = new Stack<int>();
+		st.Push(10); st.Push(20); st.Push(30);
+        foreach(int i in st){
+            System.Console.Write(i+" ");
+        }
+		System.Console.WriteLine(st.Peek());
+		st.Pop();
+		Console.WriteLine(st.Peek());
+
+        System.Console.WriteLine("Queue-------");
+        Queue<String> que = new Queue<string>();
+        que.Enqueue("abs"); que.Enqueue("abss");
+        que.Dequeue(); que.Peek();
+
+		
 			//--------------------------------------//
 			// List //
 			List<int> data = new List<int>();
